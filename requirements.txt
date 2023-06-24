@@ -1,0 +1,5 @@
+torch
+ptflops
+jupyter
+matplotlib
+torchvision
