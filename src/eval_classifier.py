@@ -1,6 +1,8 @@
 import time
 import torch
-from utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
+from src.utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def validate(val_loader, val_loader_len, model, criterion, title='Val'):
     num_classes = model.module.classifier[3].out_features
@@ -21,7 +23,8 @@ def validate(val_loader, val_loader_len, model, criterion, title='Val'):
         # measure data loading time
         data_time.update(time.time() - end)
 
-        target = target.cuda(non_blocking=True)
+        target = target.to(device)
+        input = input.to(device)
 
         with torch.no_grad():
             # compute output

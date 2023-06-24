@@ -19,7 +19,7 @@ import torch.utils.data.distributed
 from math import cos, pi, ceil
 from src.mobilenetv3 import mobilenetv3
 from src.eval_classifier import validate
-from utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
+from src.utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
 import argparse
 import os
 import yaml
@@ -27,12 +27,14 @@ import yaml
 from torchvision.transforms import transforms
 from torchvision.datasets.stl10 import STL10
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 def get_model(num_classes=10, pretrained=True, device=torch.device("cpu")):
     # create model
     model = mobilenetv3.mobilenetv3_large(num_classes=num_classes, width_mult=1.0)
     if pretrained:
-        state_dict = torch.load('src/mobilenetv3/pretrained/mobilenetv3-large-1cd25616.pth')
+        state_dict = torch.load('src/mobilenetv3/pretrained/mobilenetv3-large-1cd25616.pth', map_location=device)
         state_dict.pop("classifier.3.weight")
         state_dict.pop("classifier.3.bias")
         model.load_state_dict(state_dict, strict=False)
@@ -50,7 +52,7 @@ def resume_model(model, checkpoint_path, optimizer=None, best=False):
     checkpoint_file = os.path.join(checkpoint_path, ckpt)
     if os.path.isfile(checkpoint_file):
         print(f"=> loading checkpoint {checkpoint_file}")
-        checkpoint = torch.load(checkpoint_file)
+        checkpoint = torch.load(checkpoint_file, map_location=device)
         epoch = checkpoint['epoch']
         best_prec1 = checkpoint['best_prec1']
         model.load_state_dict(checkpoint['state_dict'])

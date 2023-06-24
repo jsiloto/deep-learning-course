@@ -2,39 +2,26 @@
 Training script for ImageNet
 Copyright (c) Wei YANG, 2017
 '''
-import argparse
-import json
-import os
-import random
 import shutil
 import time
-import warnings
-import yaml
-import torch
 
 import torch
 import torch.nn as nn
 import torch.nn.parallel
-import torch.backends.cudnn as cudnn
-import torch.distributed as dist
 import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
-from math import cos, pi, ceil
 
-import os, sys
+import sys
 
 
 import argparse
 import os
-import yaml
-
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from src.mobilenetv3 import mobilenetv3
 from src.eval_classifier import validate
-from utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
-from boilerplate import get_dataset, get_model, resume_model, LRAdjust
+from src.utils import Bar, Logger, AverageMeter, accuracy, savefig
+from src.boilerplate import get_dataset, get_model, resume_model, LRAdjust
 
 parser = argparse.ArgumentParser(description='Deep Learning Course')
 parser.add_argument('--batch-size', default=16, type=int)
@@ -42,7 +29,8 @@ parser.add_argument('--epochs', default=80, type=int)
 parser.add_argument('-c', '--checkpoint', default='checkpoints', type=str, metavar='PATH',
                     help='path to save checkpoint (default: checkpoints)')
 
-device = torch.device("cuda:0")
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def train_classifier(args):
