@@ -136,8 +136,9 @@ class MobileNetV3Encoder(nn.Module):
 
     def forward(self, x):
         x = self.layers(x)
-        x[:, self.bottleneck_channels:, ::] = 0
-        x = x[:, :self.bottleneck_channels, ::]
+        if self.bottleneck_channels > 0:
+            x[:, self.bottleneck_channels:, ::] = 0
+            x = x[:, :self.bottleneck_channels, ::]
         return x
 
 
@@ -152,8 +153,9 @@ class MobileNetV3Decoder(nn.Module):
 
     def forward(self, x):
         original_size = self.layers[0].conv[0].in_channels
-        zeros = torch.zeros(x.shape[0], original_size - self.bottleneck_channels, x.shape[2], x.shape[3]).to(x.get_device())
-        x = torch.cat((x, zeros), dim=1)
+        if self.bottleneck_channels > 0:
+            zeros = torch.zeros(x.shape[0], original_size - self.bottleneck_channels, x.shape[2], x.shape[3]).to(x.get_device())
+            x = torch.cat((x, zeros), dim=1)
 
         x = self.layers(x)
         x = self.conv(x)
@@ -164,13 +166,14 @@ class MobileNetV3Decoder(nn.Module):
 
 
 class MobileNetV3(nn.Module):
-    def __init__(self, cfgs, mode, num_classes=1000, width_mult=1., split_position=-1, bottleneck_channels=-1):
+    def __init__(self, cfgs, mode, num_classes=1000, width_mult=1., split_position=1, bottleneck_channels=-1):
         super(MobileNetV3, self).__init__()
         # setting of inverted residual blocks
         self.cfgs = cfgs
         self.split_position = split_position
         self.bottleneck = nn.Identity()
         assert mode in ['large', 'small']
+        assert split_position >= 1
 
         # building first layer
         input_channel = _make_divisible(16 * width_mult, 8)
@@ -203,6 +206,8 @@ class MobileNetV3(nn.Module):
                                           conv=self.conv,
                                           avgpool=self.avgpool,
                                           classifier=self.classifier, bottleneck_size=bottleneck_channels)
+
+
         self._initialize_weights()
 
     def forward(self, x):

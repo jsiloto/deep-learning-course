@@ -21,101 +21,51 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 from math import cos, pi, ceil
-from src.mobilenetv3 import mobilenetv3
-from utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
+
+import os, sys
+
+
 import argparse
 import os
 import yaml
 
 
-
-from torchvision.transforms import transforms
-from torchvision.datasets.stl10 import STL10
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from src.mobilenetv3 import mobilenetv3
+from src.eval_classifier import validate
+from utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
+from boilerplate import get_dataset, get_model, resume_model, LRAdjust
 
 parser = argparse.ArgumentParser(description='Deep Learning Course')
-parser.add_argument('--batch-size', default=16)
+parser.add_argument('--batch-size', default=16, type=int)
+parser.add_argument('--epochs', default=80, type=int)
 parser.add_argument('-c', '--checkpoint', default='checkpoints', type=str, metavar='PATH',
                     help='path to save checkpoint (default: checkpoints)')
 
-
-def get_transforms(split='train', input_size=(96, 96)):
-    if split == 'train':
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.RandomRotation(degrees=(-20, 20)),
-            transforms.RandomResizedCrop(input_size, antialias=True),
-            transforms.RandomHorizontalFlip(),
-        ])
-    elif split == 'test':
-        transform = transforms.Compose([
-            transforms.Resize(input_size),
-            transforms.ToTensor()
-        ])
-    return transform
-
-
-def get_dataset(batch_size, workers=4):
-    input_shape = (96, 96)
-    num_classes = 10
-    train_dataset = STL10(root="./data/stl10", download=True, split="train",
-                          transform=get_transforms(split='train', input_size=input_shape), )
-    val_dataset = STL10(root="./data/stl10", download=True, split="test",
-                        transform=get_transforms(split='test', input_size=input_shape))
-
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size,
-                                               shuffle=True, num_workers=workers)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size,
-                                             shuffle=True, num_workers=workers)
-
-
-class LRAdjust:
-    def __init__(self, config):
-        self.lr = config['lr']
-        self.warmup = config['warmup']
-        self.epochs = config['epochs']
-
-    def adjust(self, optimizer, epoch, iteration, num_iter):
-        gamma = 0.1
-        warmup_epoch = 5 if self.warmup else 0
-        warmup_iter = warmup_epoch * num_iter
-        current_iter = iteration + epoch * num_iter
-        max_iter = self.epochs * num_iter
-        lr = self.lr * (gamma ** ((current_iter - warmup_iter) // (max_iter - warmup_iter)))
-
-        if epoch < warmup_epoch:
-            lr = self.lr * current_iter / warmup_iter
-
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = lr
+device = torch.device("cuda:0")
 
 
 def train_classifier(args):
-    d = get_dataset(args.batch_size)
-
-    model = get_model(model_config, num_classes=d.num_classes)
+    train_loader, val_loader, train_loader_len, val_loader_len = get_dataset(args.batch_size)
+    model = get_model(num_classes=10).to(device)
     # define loss function (criterion) and optimizer
-    criterion = nn.CrossEntropyLoss().cuda()
-    optimizer = torch.optim.SGD(model.parameters(), model_config['lr'], momentum=0.9, weight_decay=1e-4)
-    adjuster = LRAdjust(model_config)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4)
+    adjuster = LRAdjust(lr=0.001, warmup=5, epochs=args.epochs)
 
     # optionally resume from a checkpoint
-    checkpoint_path = model_config['checkpoint']
+    checkpoint_path = args.checkpoint
     model, start_epoch, best_prec1 = resume_model(model, checkpoint_path, optimizer, best=False)
     resume = (start_epoch != 0)
     logger = Logger(os.path.join(checkpoint_path, 'log.txt'), title="title", resume=resume)
     logger.set_names(['Epoch', 'Learning Rate', 'Train Loss', 'Valid Loss', 'Train Acc.', 'Valid Acc.'])
 
     ########################################################################################
-    metadata = {}
-    metadata['dataset_name'] = dataset_name
-    metadata['model'] = model_config
-    with open(os.path.join(checkpoint_path, 'metadata.json'), "w") as f:
-        json.dump(metadata, f)
 
-    for epoch in range(start_epoch, model_config['epochs']):
-        print('\nEpoch: [%d | %d]' % (epoch + 1, model_config['epochs']))
-        train_loss, train_acc = train(d.train_loader, d.train_loader_len, model, criterion, optimizer, adjuster, epoch)
-        val_loss, prec1, top1classes = validate(d.val_loader, d.val_loader_len, model, criterion)
+    for epoch in range(start_epoch, args.epochs):
+        print('\nEpoch: [%d | %d]' % (epoch + 1, args.epochs))
+        train_loss, train_acc = train(train_loader, train_loader_len, model, criterion, optimizer, adjuster, epoch)
+        val_loss, prec1, top1classes = validate(val_loader, val_loader_len, model, criterion)
         lr = optimizer.param_groups[0]['lr']
 
         # append logger file
@@ -138,21 +88,13 @@ def train_classifier(args):
     savefig(os.path.join(checkpoint_path, 'log.eps'))
 
     model, epoch, best_prec1 = resume_model(model, checkpoint_path, optimizer, best=True)
-    validate(d.train_loader, d.train_loader_len, model, criterion, title='Train Set')
-    _, prec1, top1classes = validate(d.val_loader, d.val_loader_len, model, criterion, title='Val Set')
+    validate(train_loader, train_loader_len, model, criterion, title='Train Set')
+    _, prec1, top1classes = validate(val_loader, val_loader_len, model, criterion, title='Val Set')
     print('Best accuracy:')
     print(prec1)
     print("Classes Accuracy")
     print(top1classes)
 
-    metadata['results'] = {}
-    metadata['results']["prec1"] = prec1
-    metadata['results']["best_prec1classes"] = top1classes
-    metadata['results']["val_samples"] = d.val_samples
-    metadata['results']["train_samples"] = d.train_samples
-
-    with open(os.path.join(checkpoint_path, 'metadata.json'), "w") as f:
-        json.dump(metadata, f)
 
 
 def save_checkpoint(state, is_best, checkpoint='checkpoint', filename='checkpoint.pth.tar'):
@@ -181,10 +123,10 @@ def train(train_loader, train_loader_len, model, criterion, optimizer, adjuster,
         # measure data loading time
         data_time.update(time.time() - end)
 
-        target = target.cuda(non_blocking=True)
+        target = target.to(device)
         # compute output
-        output = model(input)
-        loss = criterion(output, target)
+        output = model(input.to(device))
+        loss = criterion(output, target).to(device)
         # measure accuracy and record loss
         prec1, prec5 = accuracy(output, target, topk=(1, 5))
         losses.update(loss.item(), input.size(0))
