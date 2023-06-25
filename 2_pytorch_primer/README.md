@@ -1,5 +1,5 @@
 ```bash
-python src/train.py --epochs 1 --output vanilla.pt
+python 2_pytorch_primer/train.py --epochs 10 --checkpoint checkpoints/vanilla
 python eval.py vanilla.pt
 jupyter notebook --no-browser -NotebookApp.token='ABC'
 ```

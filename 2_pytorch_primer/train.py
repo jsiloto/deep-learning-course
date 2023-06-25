@@ -26,7 +26,7 @@ from src.boilerplate import get_dataset, get_model, resume_model, LRAdjust
 parser = argparse.ArgumentParser(description='Deep Learning Course')
 parser.add_argument('--batch-size', default=16, type=int)
 parser.add_argument('--epochs', default=80, type=int)
-parser.add_argument('-c', '--checkpoint', default='checkpoints', type=str, metavar='PATH',
+parser.add_argument('-c', '--checkpoint', default='checkpoints/vanilla/', type=str, metavar='PATH',
                     help='path to save checkpoint (default: checkpoints)')
 
 
