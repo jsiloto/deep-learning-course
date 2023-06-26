@@ -1,8 +1,11 @@
 from __future__ import print_function, absolute_import
 import torch
 
-__all__ = ['accuracy']
+__all__ = ['top1pred', 'accuracy']
 
+def top1pred(output):
+    _, pred = output.topk(1, 1, True, True)
+    return pred.t()[0]
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
     with torch.no_grad():

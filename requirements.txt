@@ -3,3 +3,4 @@ ptflops
 jupyter
 matplotlib
 torchvision
+compressai
