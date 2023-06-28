@@ -30,9 +30,12 @@ from torchvision.datasets.stl10 import STL10
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(num_classes=10, pretrained=True, device=torch.device("cpu")):
+def get_model(num_classes=10, pretrained=True, device=torch.device("cpu"), split_position=5, bottleneck_ratio=0.5):
     # create model
-    model = mobilenetv3.mobilenetv3_large(num_classes=num_classes, width_mult=1.0)
+    model = mobilenetv3.mobilenetv3_large(num_classes=num_classes,
+                                          width_mult=1.0,
+                                          split_position=split_position,
+                                          bottleneck_ratio=bottleneck_ratio)
     if pretrained:
         state_dict = torch.load('src/mobilenetv3/pretrained/mobilenetv3-large-1cd25616.pth', map_location=device)
         state_dict.pop("classifier.3.weight")
@@ -84,10 +87,13 @@ def get_transforms(split='train', input_size=(96, 96)):
     return transform
 
 
-def get_dataset(batch_size, workers=4):
+def get_dataset(batch_size, workers=4, unlabeled=False):
     input_shape = (96, 96)
     num_classes = 10
-    train_dataset = STL10(root="./data/stl10", download=True, split="train",
+    train_split = "train"
+    if unlabeled:
+        train_split = "unlabeled"
+    train_dataset = STL10(root="./data/stl10", download=True, split=train_split,
                           transform=get_transforms(split='train', input_size=input_shape), )
     val_dataset = STL10(root="./data/stl10", download=True, split="test",
                         transform=get_transforms(split='test', input_size=input_shape))

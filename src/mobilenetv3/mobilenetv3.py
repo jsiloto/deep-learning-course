@@ -166,7 +166,7 @@ class MobileNetV3Decoder(nn.Module):
 
 
 class MobileNetV3(nn.Module):
-    def __init__(self, cfgs, mode, num_classes=1000, width_mult=1., split_position=1, bottleneck_channels=-1):
+    def __init__(self, cfgs, mode, num_classes=1000, width_mult=1., split_position=1, bottleneck_ratio=-1):
         super(MobileNetV3, self).__init__()
         # setting of inverted residual blocks
         self.cfgs = cfgs
@@ -199,6 +199,8 @@ class MobileNetV3(nn.Module):
             nn.Linear(output_channel, num_classes),
         )
 
+
+        original_channels = self.cfgs[self.split_position]
         encoder_layers = list(self.features[:self.split_position])
         decoder_layers = list(self.features[self.split_position:])
         self.encoder = MobileNetV3Encoder(encoder_layers, bottleneck_size=bottleneck_channels)

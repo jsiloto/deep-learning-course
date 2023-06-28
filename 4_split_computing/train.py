@@ -20,15 +20,13 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from src.eval_classifier import validate
-from src.utils import Bar, Logger, AverageMeter, accuracy, savefig, top1pred
+from src.utils import Bar, Logger, AverageMeter, accuracy, savefig
 from src.boilerplate import get_dataset, get_model, resume_model, LRAdjust
 
 parser = argparse.ArgumentParser(description='Deep Learning Course')
 parser.add_argument('--batch-size', default=16, type=int)
 parser.add_argument('--epochs', default=80, type=int)
-parser.add_argument('-sc', '--teacher-checkpoint', default='checkpoints/vanilla/', type=str, metavar='PATH',
-                    help='path to save checkpoint (default: checkpoints)')
-parser.add_argument('-c', '--checkpoint', default='checkpoints/distill/', type=str, metavar='PATH',
+parser.add_argument('-c', '--checkpoint', default='checkpoints/vanilla/', type=str, metavar='PATH',
                     help='path to save checkpoint (default: checkpoints)')
 
 
@@ -36,18 +34,16 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def train_classifier(args):
-    train_loader, val_loader, train_loader_len, val_loader_len = get_dataset(args.batch_size, unlabeled=True)
-    student = get_model(num_classes=10).to(device)
-    teacher = get_model(num_classes=10).to(device)
+    train_loader, val_loader, train_loader_len, val_loader_len = get_dataset(args.batch_size)
+    model = get_model(num_classes=10, split_position=5, bottleneck_ratio=0.5).to(device)
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(student.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4)
     adjuster = LRAdjust(lr=0.001, warmup=5, epochs=args.epochs)
 
     # optionally resume from a checkpoint
     checkpoint_path = args.checkpoint
-    student, start_epoch, best_prec1 = resume_model(student, args.checkpoint, optimizer, best=False)
-    teacher, _ , _ = resume_model(teacher, args.teacher_checkpoint, optimizer, best=False)
+    model, start_epoch, best_prec1 = resume_model(model, checkpoint_path, optimizer, best=False)
     resume = (start_epoch != 0)
     logger = Logger(os.path.join(checkpoint_path, 'log.txt'), title="title", resume=resume)
     logger.set_names(['Epoch', 'Learning Rate', 'Train Loss', 'Valid Loss', 'Train Acc.', 'Valid Acc.'])
@@ -56,8 +52,8 @@ def train_classifier(args):
 
     for epoch in range(start_epoch, args.epochs):
         print('\nEpoch: [%d | %d]' % (epoch + 1, args.epochs))
-        train_loss, train_acc = train(train_loader, train_loader_len, student, teacher, criterion, optimizer, adjuster, epoch)
-        val_loss, prec1, top1classes = validate(val_loader, val_loader_len, student, criterion)
+        train_loss, train_acc = train(train_loader, train_loader_len, model, criterion, optimizer, adjuster, epoch)
+        val_loss, prec1, top1classes = validate(val_loader, val_loader_len, model, criterion)
         lr = optimizer.param_groups[0]['lr']
 
         # append logger file
@@ -69,7 +65,7 @@ def train_classifier(args):
             best_prec1classes = top1classes
         save_checkpoint({
             'epoch': epoch + 1,
-            'state_dict': student.state_dict(),
+            'state_dict': model.state_dict(),
             'best_prec1': best_prec1,
             'best_prec1classes': best_prec1classes,
             'optimizer': optimizer.state_dict(),
@@ -79,7 +75,7 @@ def train_classifier(args):
     logger.plot()
     savefig(os.path.join(checkpoint_path, 'log.eps'))
 
-    model, epoch, best_prec1 = resume_model(student, checkpoint_path, optimizer, best=True)
+    model, epoch, best_prec1 = resume_model(model, checkpoint_path, optimizer, best=True)
     validate(train_loader, train_loader_len, model, criterion, title='Train Set')
     _, prec1, top1classes = validate(val_loader, val_loader_len, model, criterion, title='Val Set')
     print('Best accuracy:')
@@ -96,7 +92,7 @@ def save_checkpoint(state, is_best, checkpoint='checkpoint', filename='checkpoin
         shutil.copyfile(filepath, os.path.join(checkpoint, 'model_best.pth.tar'))
 
 
-def train(train_loader, train_loader_len, student, teacher, criterion, optimizer, adjuster, epoch):
+def train(train_loader, train_loader_len, model, criterion, optimizer, adjuster, epoch):
     bar = Bar('Train', max=train_loader_len)
 
     batch_time = AverageMeter()
@@ -106,8 +102,7 @@ def train(train_loader, train_loader_len, student, teacher, criterion, optimizer
     top5 = AverageMeter()
 
     # switch to train mode
-    student.train()
-    teacher.eval()
+    model.train()
 
     end = time.time()
     for i, (input, target) in enumerate(train_loader):
@@ -115,15 +110,12 @@ def train(train_loader, train_loader_len, student, teacher, criterion, optimizer
 
         # measure data loading time
         data_time.update(time.time() - end)
-        with torch.no_grad():
-            target = teacher(input.to(device))
-            target = top1pred(target)
 
+        target = target.to(device)
         # compute output
-        output = student(input.to(device))
+        output = model(input.to(device))
         loss = criterion(output, target).to(device)
         # measure accuracy and record loss
-
         prec1, prec5 = accuracy(output, target, topk=(1, 5))
         losses.update(loss.item(), input.size(0))
         top1.update(prec1.item(), input.size(0))
