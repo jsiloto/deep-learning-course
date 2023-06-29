@@ -7,6 +7,9 @@ This is usually useful in particular to:
 - Modify a trained model (pruning, compresion etc)
 - Train without using labels
 
+Check out the seminal paper by [Hinton et al](https://arxiv.org/abs/1503.02531)
+
+
 ## Coding Assignment
 
 ### Supervised KD
@@ -21,3 +24,6 @@ and edit it to use the original models predictions as labels. You might want to 
 
 
 ### Unsupervised KD
+
+Read more about the STL10 Dataset https://cs.stanford.edu/~acoates/stl10/
+Change the code to train on unlabeled data

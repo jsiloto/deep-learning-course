@@ -154,7 +154,10 @@ class MobileNetV3Decoder(nn.Module):
     def forward(self, x):
         original_size = self.layers[0].conv[0].in_channels
         if self.bottleneck_channels > 0:
-            zeros = torch.zeros(x.shape[0], original_size - self.bottleneck_channels, x.shape[2], x.shape[3]).to(x.get_device())
+            device = x.get_device()
+            if device < 0:
+                device = torch.device("cpu")
+            zeros = torch.zeros(x.shape[0], original_size - self.bottleneck_channels, x.shape[2], x.shape[3]).to(device)
             x = torch.cat((x, zeros), dim=1)
 
         x = self.layers(x)

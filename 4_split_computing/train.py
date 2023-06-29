@@ -35,7 +35,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def train_classifier(args):
     train_loader, val_loader, train_loader_len, val_loader_len = get_dataset(args.batch_size)
-    model = get_model(num_classes=10, split_position=5, bottleneck_ratio=0.5).to(device)
+    model = get_model(num_classes=10, split_position=5, bottleneck_ratio=0.25).to(device)
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4)
