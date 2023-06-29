@@ -6,21 +6,23 @@ jupyter notebook --no-browser -NotebookApp.token='ABC'
 
 ### Pytorch Primer (30 min)
 
-Main libraries -> We are focusing on PyTorch
-
-By today you should:
-- Know how to use pytorch
-	- Get Script for pytorch loop
-	- Add new model
-	- Fix bug with topk
-	- Train a model (Give weights)
-	- Observe Output
-
-
+Objectives:
+- Know what is pytorch
+- Have run and modified a pytorch training script
+- Train a neural network and observe the output
+- Understand what is complexity in neural networks
 
 ### Model Complexity
-Designing Network Design Spaces - https://arxiv.org/abs/2003.13678
-Number of Activations
+Many things can be used to describe complexity in deep neural networks:
+number of parameters, size in MB, number of FLOPS, number of activations,
+inference latency, training latency, energy consumption etc
+
+We will explore in `2_pytorch_primer/complexity.ipynb` the most common proxy: FLOPS
+But if you want to go ahead and look at `4_split_computing/latency.py` we will also explore
+inference latency.
+
+Recommended reading: Designing Network Design Spaces - https://arxiv.org/abs/2003.13678
+
 
 
 
