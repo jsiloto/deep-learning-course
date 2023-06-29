@@ -64,8 +64,9 @@ def main():
 
     benchmark_model_inference(model=decoder, input_shape=shape[1:])
 
-    print(shape)
-    print(shape[0]*shape[1]*shape[2]*shape[3])
+    oshape = input_image.shape
+    print(f"Original size: {oshape[0]*oshape[1]*oshape[2]}")
+    print(f"Compressed size: {shape[0]*shape[1]*shape[2]*shape[3]}")
 
 
 

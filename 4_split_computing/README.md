@@ -17,4 +17,13 @@ Encoder Model
 2.3 ms
 Decoder Model
 6.7 ms
+Original size: 27648
+Compressed size: 2880
 ```
+
+## Computing Assignment
+- Train one split computing model
+- Add quantization
+
+### Challenge
+- Implement an Entropy Bottleneck model for split compression
