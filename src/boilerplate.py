@@ -58,6 +58,7 @@ def resume_model(model, checkpoint_path, optimizer=None, best=False):
         checkpoint = torch.load(checkpoint_file, map_location=device)
         epoch = checkpoint['epoch']
         best_prec1 = checkpoint['best_prec1']
+        best_prec1classes = checkpoint['best_prec1classes']
         model.load_state_dict(checkpoint['state_dict'])
         if optimizer is not None:
             optimizer.load_state_dict(checkpoint['optimizer'])
@@ -68,7 +69,7 @@ def resume_model(model, checkpoint_path, optimizer=None, best=False):
         epoch = 0
         print(f"=> no checkpoint found at {checkpoint_file}")
 
-    return model, epoch, best_prec1
+    return model, epoch, best_prec1, best_prec1classes
 
 
 def get_transforms(split='train', input_size=(96, 96)):

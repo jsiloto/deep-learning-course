@@ -43,7 +43,7 @@ def train_classifier(args):
 
     # optionally resume from a checkpoint
     checkpoint_path = args.checkpoint
-    model, start_epoch, best_prec1 = resume_model(model, checkpoint_path, optimizer, best=False)
+    model, start_epoch, best_prec1, best_prec1classes = resume_model(model, checkpoint_path, optimizer, best=False)
     resume = (start_epoch != 0)
     logger = Logger(os.path.join(checkpoint_path, 'log.txt'), title="title", resume=resume)
     logger.set_names(['Epoch', 'Learning Rate', 'Train Loss', 'Valid Loss', 'Train Acc.', 'Valid Acc.'])

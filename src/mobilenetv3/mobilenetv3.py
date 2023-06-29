@@ -133,12 +133,15 @@ class MobileNetV3Encoder(nn.Module):
         super().__init__()
         self.layers = nn.Sequential(*layers)
         self.bottleneck_channels = bottleneck_size
+        self.quant = nn.Identity()
 
     def forward(self, x):
         x = self.layers(x)
         if self.bottleneck_channels > 0:
             x[:, self.bottleneck_channels:, ::] = 0
             x = x[:, :self.bottleneck_channels, ::]
+
+        x = self.quant(x)
         return x
 
 
@@ -150,8 +153,11 @@ class MobileNetV3Decoder(nn.Module):
         self.avgpool = avgpool
         self.classifier = classifier
         self.bottleneck_channels = bottleneck_size
+        self.dequant = nn.Identity()
 
     def forward(self, x):
+        x = self.dequant(x)
+
         original_size = self.layers[0].conv[0].in_channels
         if self.bottleneck_channels > 0:
             device = x.get_device()

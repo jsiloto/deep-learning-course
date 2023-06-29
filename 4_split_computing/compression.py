@@ -1,6 +1,30 @@
+import torch
 from torch import nn
 from compressai.layers import GDN1
 from compressai.models import CompressionModel, MeanScaleHyperprior
+from collections import namedtuple
+
+QuantizedTensor = namedtuple('QuantizedTensor', ['tensor', 'scale', 'zero_point'])
+
+# Referred to https://github.com/eladhoffer/utils.pytorch/blob/master/quantize.py
+#  and http://openaccess.thecvf.com/content_cvpr_2018/papers/Jacob_Quantization_and_Training_CVPR_2018_paper.pdf
+def quantize_tensor(x, num_bits=8):
+    # c = torch.quantize_per_tensor(x, p[0], p[1], dtype=torch.quint8)
+    # print(c)
+
+    qmin = 0.0
+    qmax = 2.0 ** num_bits - 1.0
+    # min_val, max_val = x.min(), x.max()
+    min_val, max_val = -torch.std(x.flatten())*num_bits/2, torch.std(x.flatten())*num_bits/2
+    scale = (max_val - min_val) / (qmax - qmin)
+    zero_point = min_val
+    qx = (x - zero_point)/ scale
+    qx = qx.clamp(qmin, qmax).round().byte()
+    return QuantizedTensor(tensor=qx, scale=scale, zero_point=zero_point)
+
+
+def dequantize_tensor(q_x):
+    return q_x.scale * (q_x.tensor) + q_x.zero_point
 
 
 class FactorizedPriorAE(CompressionModel):
