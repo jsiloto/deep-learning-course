@@ -23,7 +23,12 @@ Compressed size: 2880
 
 ## Computing Assignment
 - Train one split computing model
+- Train one split computing model with flexible number of channels 
 - Add quantization
+
+Additional Reading:
+Slimmable Neural Networks: https://arxiv.org/abs/2306.12691
+Flexible Split Computing: https://arxiv.org/abs/1812.08928
 
 ### Challenge
 - Implement an Entropy Bottleneck model for split compression
