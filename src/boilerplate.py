@@ -48,6 +48,7 @@ def get_model(num_classes=10, pretrained=True, device=torch.device("cpu"), split
 
 def resume_model(model, checkpoint_path, optimizer=None, best=False):
     best_prec1 = 0.0
+    best_prec1classes = []
     if not os.path.isdir(checkpoint_path):
         mkdir_p(checkpoint_path)
 
