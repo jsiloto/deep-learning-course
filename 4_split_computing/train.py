@@ -76,9 +76,9 @@ def train_classifier(args):
     logger.plot()
     savefig(os.path.join(checkpoint_path, 'log.eps'))
 
-    model, epoch, best_prec1 = resume_model(model, checkpoint_path, optimizer, best=True)
+    model, epoch, best_prec1, best_prec1classes = resume_model(model, checkpoint_path, optimizer, best=True)
 
-    for r in np.linspace(0.1, 0.5, 0.05):
+    for r in np.linspace(0.1, 0.5, 10):
         model.module.encoder.bottleneck_ratio = r
         model.module.decoder.bottleneck_ratio = r
 
