@@ -2,7 +2,7 @@
 
 In this section we will modify the model to perform compression as well as inference.
 This technique is known as split computing. 
-For an introduction see [Matsubara et al](https://dl.acm.org/doi/10.1145/3527155)
+For an introduction see [Matsubara et al.](https://dl.acm.org/doi/10.1145/3527155)
 
 ![](split_model.png)
 
@@ -27,3 +27,4 @@ Compressed size: 2880
 
 ### Challenge
 - Implement an Entropy Bottleneck model for split compression
+- For more information see: [Supervised Compression for Resource-Constrained Edge Computing Systems](https://arxiv.org/abs/2108.11898)
