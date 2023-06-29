@@ -200,7 +200,8 @@ class MobileNetV3(nn.Module):
         )
 
 
-        original_channels = self.cfgs[self.split_position]
+        original_channels = self.cfgs[self.split_position][2]
+        bottleneck_channels=int(bottleneck_ratio*original_channels)
         encoder_layers = list(self.features[:self.split_position])
         decoder_layers = list(self.features[self.split_position:])
         self.encoder = MobileNetV3Encoder(encoder_layers, bottleneck_size=bottleneck_channels)

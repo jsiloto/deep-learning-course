@@ -30,7 +30,7 @@ from torchvision.datasets.stl10 import STL10
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(num_classes=10, pretrained=True, device=torch.device("cpu"), split_position=5, bottleneck_ratio=0.5):
+def get_model(num_classes=10, pretrained=True, device=torch.device("cpu"), split_position=5, bottleneck_ratio=-1):
     # create model
     model = mobilenetv3.mobilenetv3_large(num_classes=num_classes,
                                           width_mult=1.0,
