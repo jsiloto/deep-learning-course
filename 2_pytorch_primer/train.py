@@ -75,7 +75,7 @@ def train_classifier(args):
     logger.plot()
     savefig(os.path.join(checkpoint_path, 'log.eps'))
 
-    model, epoch, best_prec1 = resume_model(model, checkpoint_path, optimizer, best=True)
+    model, epoch, best_prec1, best_prec1classes = resume_model(model, checkpoint_path, optimizer, best=True)
     validate(train_loader, train_loader_len, model, criterion, title='Train Set')
     _, prec1, top1classes = validate(val_loader, val_loader_len, model, criterion, title='Val Set')
     print('Best accuracy:')
